@@ -1,0 +1,9 @@
+FALCON - FAst Lucene-based Cover sOng identificatioN
+Copyright 2010 University of Padova
+
+Includes software from Apache Software Foundation projects:
+  - Apache Lucene Java (http://lucene.apache.org/java)
+
+This product includes the JOpt-Simple software
+(http://jopt-simple.sourceforge.net/index.html)
+
