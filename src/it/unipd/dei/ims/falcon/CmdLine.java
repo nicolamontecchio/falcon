@@ -85,118 +85,46 @@ public class CmdLine {
 	// TODO add the 'notransposition' option
 	private static void ranking(OptionSet cmdline_options) throws IOException, QueryParsingException {
 		String indexPath = (String) cmdline_options.valueOf("indexpath");
-		String dataPath = (String) cmdline_options.valueOf("querypath");
+		String queryDataPath = (String) cmdline_options.valueOf("querypath");
 		int hashPerSegment = (Integer) cmdline_options.valueOf("hashperseg");
 		int segmentOverlap = (Integer) cmdline_options.valueOf("overlap");
 		if (cmdline_options.has("lambda")) {
 			QueryMethods.setLambda((Float) cmdline_options.valueOf("lambda"));
 		}
 		// query pruning strategy (default value, can be overridden or set to null if option is not given)
-		// TODO clean up a bit
-		String ss = default_query_pruning_strategy;
-		if (cmdline_options.has("qps")) {
-			if (cmdline_options.valueOf("qps") != null) {
-				ss = (String) cmdline_options.valueOf("qps");
-			}
-		} else {
-			ss = null;
-		}
+		String ss = cmdline_options.has("qps")
+				? (cmdline_options.valueOf("qps") != null
+				? (String) cmdline_options.valueOf("qps") : default_query_pruning_strategy) : null;
 		QueryPruningStrategy hqps = ss != null ? new StaticQueryPruningStrategy(ss) : null;
 		QueryParser qParser = new QueryParser(hqps);
 		qParser.loadQueryPruningHashFeatures(indexPath);
 
-		// Obtain the list of file used as query
-		long initTime = System.currentTimeMillis();
-		TranspositionFileEntry[] tfes = null;
-		if ((String) cmdline_options.valueOf("transpfile") != null) {
-			tfes = TranspositionFileParser.getTranspositionFileContents(new File((String) cmdline_options.valueOf("transpfile")));
-		}
-		LinkedList<Integer> ranks = new LinkedList<Integer>();
 
 		// load file names in 0/ subdirectory
-		String[] filenames = (new File(dataPath, "0")).list();
+		String[] filenames = (new File(queryDataPath, "0")).list();
 		int ntransp = cmdline_options.has("ntransp") ? (Integer) cmdline_options.valueOf("ntransp") : 3;
 
 		for (String f : filenames) {
-			// is the file in the transpositions file? otherwise skip
-			TranspositionFileEntry tfe = null; // for the current query
-			boolean skip = false;
-			if (tfes != null) {
-				skip = true;
-				for (TranspositionFileEntry e : tfes) {
-					if (e.getQueryFileName().equals(f.replaceAll(".mp3.txt", ""))) {
-						skip = false;
-						tfe = e;
-						break;
+			// depending on just qp or also qf, do a whole directory or a single query
+			// TODO complete here
+			// TODO here also goes the 'notransp' stuff
+			List<File> queryFilesList = new LinkedList<File>();
+			for (int i = 0; i < ntransp; i++) {
+				File subdir = new File(queryDataPath, String.format("%d", i));
+				if (subdir.exists()) {
+					File subfile = new File(subdir, f);
+					if (subfile.exists()) {
+						queryFilesList.add(subfile);
 					}
 				}
-			} else {
-				if (f.startsWith(".")) {
-					skip = true;
-				}
 			}
-			// do the query
-			if (!skip) {
-				// load all the files (at most ntransp) related to the
-				// query
-				long queryInitTime = System.currentTimeMillis();
-				System.out.println(String.format("processing %s", f));
-				List<File> queryFilesList = new LinkedList<File>();
-				for (int i = 0; i < ntransp; i++) {
-					File subdir = new File(dataPath, String.format("%d", i));
-					if (subdir.exists()) {
-						File subfile = new File(subdir, f);
-						if (subfile.exists()) {
-							queryFilesList.add(subfile);
-						}
-					}
-				}
-				// perform the query
-				Map<String, Double> songid2finalscore = QueryMethods.performQuery(queryFilesList, new File(
-						indexPath), hashPerSegment, segmentOverlap, hqps);
-				// compute the rank
-				if (tfe != null) {
-					int r = 1;
-					for (DocScorePair p : DocScorePair.docscore2scoredoc(songid2finalscore)) {
-						if (p.getDoc().replaceAll(".mp3.txt", "").equals(tfe.getCollFileName())) {
-							break;
-						}
-						r++;
-					}
-					System.out.println(String.format("   matching rank: %3d", r));
-					ranks.add(r);
-				}
-				if (cmdline_options.has("scores")) {
-					// print the sorted scores
-					int r = 1;
-					for (DocScorePair p : DocScorePair.docscore2scoredoc(songid2finalscore)) {
-						System.out.println(String.format("rank %3d: %10.6f - %s", r++, p.getScore(), p.getDoc()));
-					}
-				}
-				System.out.println("   query time: " + (System.currentTimeMillis() - queryInitTime) + " ms");
+			Map<String, Double> songid2finalscore =
+					QueryMethods.performQuery(queryFilesList, new File(indexPath), hashPerSegment, segmentOverlap, hqps);
+			int r = 1;
+			for (DocScorePair p : DocScorePair.docscore2scoredoc(songid2finalscore)) {
+				System.out.println(String.format("rank %3d: %10.6f - %s", r++, p.getScore(), p.getDoc()));
 			}
-		}
-		System.out.println("Total Query time: " + (System.currentTimeMillis() - initTime) + " [ms]");
-		if (!ranks.isEmpty()) {
-			System.out.println("ranking positions");
-			for (Integer r : ranks) {
-				System.out.print(String.format("%3d, ", r));
-			}
-			System.out.println();
-			double mrr = 0;
-			for (Integer r : ranks) {
-				mrr += 1. / r;
-			}
-			mrr /= ranks.size();
-			System.out.println(String.format("Final MRR: %f", mrr));
-			if (qParser.isPruningEnabled()) {
-				double pruned_hash_ratio =
-						1. * qParser.getPrunedHashInQuerySession() / qParser.getTotalHashInQuerySession();
-				System.out.println("Total Hash: " + qParser.getTotalHashInQuerySession());
-				System.out.println("Pruned Hash: " + qParser.getPrunedHashInQuerySession());
-				System.out.println(String.format("Pruned/Total Hash: %f", pruned_hash_ratio));
 
-			}
 		}
 	}
 
@@ -212,9 +140,9 @@ public class CmdLine {
 				acceptsAll(asList("c", "conversion"), "perform chroma conversion");
 				acceptsAll(asList("i", "indexing"), "perform indexing");
 				acceptsAll(asList("r", "ranking"), "perform ranking");
-				acceptsAll(asList("s", "scores"), "show full score lists");
 				acceptsAll(asList("ip", "indexpath")).withRequiredArg().ofType(String.class);
-				acceptsAll(asList("qp", "querypath")).withRequiredArg().ofType(String.class);
+				acceptsAll(asList("qp", "querypath"), "path for query files").withRequiredArg().ofType(String.class);
+				acceptsAll(asList("qf", "queryfile"), "single-file query").withRequiredArg().ofType(String.class);
 				acceptsAll(asList("dp", "datapath")).withRequiredArg().ofType(String.class);
 				acceptsAll(asList("cql"), "chroma quantization levels").withRequiredArg().ofType(Integer.class);
 				acceptsAll(asList("cd", "convertdir"), "convert files in data path to hash " + "representation").withRequiredArg().ofType(String.class).describedAs("output base directory");
