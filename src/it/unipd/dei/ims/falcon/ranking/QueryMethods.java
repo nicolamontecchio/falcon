@@ -39,7 +39,7 @@ import org.apache.lucene.store.SimpleFSDirectory;
 public class QueryMethods {
 
     // smoothing parameter to combine rank and score
-    private static float lambda = 1;
+    private static float lambda = 1;  // TODO important remove everything related to lambda, as it was never used
     // cache which stores for each lucene identifier, namely for each
     // segment, the TITLE of the song which contains that segment
     private static Map<Integer, String> docId2songidCache;
