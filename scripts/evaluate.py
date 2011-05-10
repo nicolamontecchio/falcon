@@ -44,8 +44,10 @@ def computeMRR(mpr) :
 
 def computeAP(rl) :
     ap = 0.
+    c = 0
     for r in rl :
-        ap += 1./r
+        c += 1.
+        ap += c/r
     ap /= len(rl)
     return ap
 

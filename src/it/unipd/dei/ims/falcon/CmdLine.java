@@ -139,6 +139,7 @@ public class CmdLine {
 					}
 				}
 			}
+			System.out.println("qfl len: " + queryFilesList.size());
 			Map<String, Double> songid2finalscore =
 					QueryMethods.performQuery(queryFilesList, new File(indexPath), hashPerSegment, segmentOverlap, hqps);
 			int r = 1;
