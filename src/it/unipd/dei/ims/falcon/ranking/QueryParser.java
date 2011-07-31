@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -197,6 +199,7 @@ public class QueryParser {
      *            number of hash in the segment overlap
      * @throws QueryParsingException
      */
+		@Deprecated
     public void extractQuery(File queryFile, int hashPerSegment, int hashInSegmentOverlap) throws QueryParsingException {
 
         // the number of hash in a segment cannot be equal to the number
@@ -312,6 +315,134 @@ public class QueryParser {
 
     }
 
+		/**
+     * Extracts segments from the file and put the song in a set of (hash,hash_frequency) items
+     *
+     * @param queryFile
+     *            text stream containing the hashes in the song
+     * @param hashPerSegment
+     *            number of hash per segment
+     * @param hashInSegmentOverlap
+     *            number of hash in the segment overlap
+     * @throws QueryParsingException
+     */
+		public void extractQuery(InputStream query, int hashPerSegment, int hashInSegmentOverlap) throws QueryParsingException {
+
+        // the number of hash in a segment cannot be equal to the number
+        // of hash in the overlap: that will lead to an infinite loop
+        if (hashPerSegment == hashInSegmentOverlap) {
+            throw new QueryParsingException("Number of hash per segment cannot be equal to the"
+                    + "number of hash in the overlap");
+        }
+
+        querySegmentLength = hashPerSegment;
+
+        querySegments = new ArrayList<SegmentBagOfFeatures>();
+
+        BufferedReader buffReader = null;
+        int cur_hash;
+
+        // cache of hashes adopted to manage segment overlap
+        LinkedList<Integer> hashCache = new LinkedList<Integer>();
+        // list of local hash identifiers avaliable after the removal
+        // of hash non in the overlap 
+        LinkedList<Integer> localHashPointersAvailable = new LinkedList<Integer>();
+
+        try {
+
+            buffReader = new BufferedReader(new InputStreamReader(query));
+            // string containing all hashes for the current song
+            String content = buffReader.readLine();
+            // scanner to extract hash
+            Scanner scanner = new Scanner(content);
+            // number of segments currently considered for the song being
+            // processed
+            int hashSegment = 0;
+            // number of hash
+            int curHashInSegment = 0;
+            // map from the HASH to the ID of the hash in the currently
+            // considered segment
+            TreeMap<Integer, Integer> hashID_localPointer_map = new TreeMap<Integer, Integer>();
+
+            int[] hash_freq_per_segment = new int[hashPerSegment];
+            // identifier of the hash in the segment
+            int localHashPointer = 0;
+
+            while (scanner.hasNext()) {
+                // current considered hash
+                cur_hash = Integer.parseInt(scanner.next());
+                if (cur_hash == -1) {
+                    continue;
+                }
+                // add current hash to the cache
+                hashCache.add(cur_hash);
+
+                curHashInSegment++;
+                // update local map for segment hash IDs
+                if (hashID_localPointer_map.containsKey(cur_hash)) {
+                    localHashPointer = hashID_localPointer_map.get(cur_hash);
+                } else {
+                    if (localHashPointersAvailable.isEmpty()) {
+                        localHashPointer = hashID_localPointer_map.size();
+                    } else {
+                        localHashPointer = localHashPointersAvailable.poll();
+                        assert !hashID_localPointer_map.containsValue(localHashPointer);
+                    }
+                    hashID_localPointer_map.put(cur_hash, localHashPointer);
+                }
+                // increment the frequency of occurrence of the current hash
+                hash_freq_per_segment[localHashPointer]++;
+                // if we are at the end of the segment
+                if (hashPerSegment - curHashInSegment == 0) {
+                    // add the posting lists for the distinct hashes in the
+                    // current segment to the list of posting lists for the
+                    // entire song
+                    querySegments.add(new SegmentBagOfFeatures(hashID_localPointer_map, hash_freq_per_segment));
+                    // store the number of distinct hashes in this segment
+                    // segmentLengths.add(hashID_localPointer_map.size());
+                    // identifier for the next segment
+                    hashSegment++;
+
+                    if (hashInSegmentOverlap == 0) {
+                        // create a new vector for segment hash frequencies
+                        hash_freq_per_segment = new int[hashPerSegment];
+                        // create a new set for distinct hashes
+                        hashID_localPointer_map = new TreeMap<Integer, Integer>();
+                        // init the identifier of the hash for the next segment
+                        localHashPointer = 0;
+                        // set to zero the number of hash for the next segment
+                        curHashInSegment = 0;
+                    } else {
+                        for (int h = 0; h < hashPerSegment - hashInSegmentOverlap; h++) {
+                            int curHashToRemove = hashCache.poll();
+                            int curHashLocaID = hashID_localPointer_map.get(curHashToRemove);
+                            // decrease the frequency for the current hash
+                            // to be removed
+                            hash_freq_per_segment[curHashLocaID]--;
+                            if (hash_freq_per_segment[curHashLocaID] == 0) {
+                                localHashPointersAvailable.add(curHashLocaID);
+                                hashID_localPointer_map.remove(curHashToRemove);
+                            }
+                        }
+                        curHashInSegment = hashInSegmentOverlap;
+                    }
+                }
+            }
+
+        } catch (IOException ex) {
+            throw new QueryParsingException("IOException: Error during query extraction");
+        } finally {
+            try {
+                buffReader.close();
+            } catch (IOException ex) {
+                Logger.getLogger(QueryParser.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+				
+    }
+		
+		
+		
     /**
      * Returns a {@link SegmentQuery} from the segment "segmentNumber" 
      *
