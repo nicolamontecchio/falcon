@@ -44,7 +44,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.SimpleFSDirectory;
 
-// TODO modify in order to allow scoring for segments of different lengths
+// TODO subsampling appears not to work ...
 /**
  * Provides functionalities for performing a query
  * 
@@ -93,9 +93,25 @@ public class QueryMethods {
 	private static IndexReader reader = null;
 	private static IndexSearcher searcher = null;
 
-	// TODO copy more or less the doc from the git repository 
+	/**
+	 * Perform a query.
+	 *
+	 * @param query            input stream containing the chroma matrix in text format
+	 * @param index            index structure
+	 * @param hps              length of a segment
+	 * @param overlap          overlap between segments (# of hashes)
+	 * @param nranks           quantization level
+	 * @param tpe              instance of transposition estimator algorithm (when null, no transposition attempt is performed)
+	 * @param ntransp          number of transposition attempts (iff tpe != null)
+	 * @param minkurt          kurtosis threshold for considering a chroma vector
+	 * @param pruningStrategy  instance of pruning strategy algorithm
+	 * @throws IOException
+	 * @throws QueryParsingException
+	 * @throws InterruptedException
+	 * @return a map from the document title (typically the mp3 file name) to the similarity score
+	 */
 	public static Map<String, Double> query(final InputStream query, File index, final int hps, final int overlap, int nranks, final TranspositionEstimator tpe, int ntransp, final double minkurt, QueryPruningStrategy pruningStrategy) throws IOException, QueryParsingException, InterruptedException {
-		
+
 		if (reader == null) {
 			reader = IndexReader.open(new SimpleFSDirectory(index));
 		}
@@ -117,16 +133,12 @@ public class QueryMethods {
 			Map<String, Double> songid2finalscore = new TreeMap<String, Double>();
 			final PipedInputStream pi2 = new PipedInputStream(po1);
 			tpool.submit(new Runnable() {
+
 				public void run() {
 					try {
-						System.out.println("performQuery - runnable A");
 						queryParser.extractQuery(pi2, hps, overlap);
-						System.out.println("performQuery - runnable A | query extracted");
-						System.out.println("performQuery - runnable A | total segments: " + queryParser.getNumberOfSegments());
 						Map<String, Double> songid2finalscore = new TreeMap<String, Double>();
-						
 						for (int i = 0; i < queryParser.getNumberOfSegments(); i++) {
-//							System.out.println("performQuery - runnable A | segment " + i + " of " + queryParser.getNumberOfSegments());
 							Query query = queryParser.getQueryFromSegment(i);
 							TopDocs td = searcher.search(query, reader.numDocs());
 							Map<String, Double> songid2maxscore = reduceMaxScoreForEachSong(td, searcher);
@@ -138,9 +150,7 @@ public class QueryMethods {
 								songid2finalscore.put(songid, currentscore);
 							}
 						}
-						System.out.println("performQuery - runnable A | out of loop");
 						allTranspRes.add(songid2finalscore);
-						System.out.println("performQuery - runnable A | added to global res");
 					} catch (IOException ex) {
 						Logger.getLogger(QueryMethods.class.getName()).log(Level.SEVERE, null, ex);
 					} catch (QueryParsingException ex) {
@@ -152,25 +162,20 @@ public class QueryMethods {
 
 		// enqueue conversion from initial input stream into integer hashes seq. (note that 'os' must be already constructed)
 		tpool.submit(new Runnable() {
+
 			public void run() {
 				try {
-					System.out.println("performQuery - runnable B");
 					ChromaMatrixUtils.convertStream(new InputStreamReader(query), os, 3, tpe, minkurt);
-					System.out.println("performQuery - runnable B ended");
 				} catch (IOException ex) {
 					Logger.getLogger(QueryMethods.class.getName()).log(Level.SEVERE, null, ex);
 				}
 			}
 		});
 
-		
 		// wait for all to complete and merge results
 		Map<String, Double> finalRes = new TreeMap<String, Double>();
 		tpool.shutdown();
 		tpool.awaitTermination(1000, TimeUnit.DAYS);
-		
-		System.out.println("performQuery - about to merge results");
-			
 		for (Map<String, Double> singlequeryres : allTranspRes) {
 			for (Entry<String, Double> e : singlequeryres.entrySet()) {
 				if (!finalRes.containsKey(e.getKey()) || e.getValue() > finalRes.get(e.getKey())) {

@@ -116,8 +116,6 @@ import org.apache.lucene.util.Version;
  */
 public class Indexing {
 
-	// TODO why not use a thread pool for the indexing step?
-	
 	/**
 	 * Indexes all the songs in the specified path.
 	 * The index is created in the specified directory "indexPath". If an index

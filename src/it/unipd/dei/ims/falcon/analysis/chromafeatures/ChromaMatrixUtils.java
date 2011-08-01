@@ -76,13 +76,11 @@ public class ChromaMatrixUtils {
 	 * Concert a chroma matrix stream into integer hashes streams.
 	 * The number of transposition used is equal to the lenght of 
 	 * the list os.
-	 * TODO compelte description
-	 * @param is 
-	 * @param os
-	 * @param nranks
-	 * @param doTransp
-	 * @param transpEst Transposition estimator. No transposition is performed if this parameter is null.
-	 * @param minkurtosis
+	 * @param is input stream containing a chroma matrix in text format
+	 * @param os list of output streams where the integer sequence should be written (as String)
+	 * @param nranks quantization level
+	 * @param transpEst instance of transposition estimator algorithm. No transposition is performed if this parameter is null.
+	 * @param minkurtosis kurtosis threshold for considering a chroma vector
 	 * @throws IOException 
 	 */
 	public static void convertStream(InputStreamReader is, List<OutputStream> os,
