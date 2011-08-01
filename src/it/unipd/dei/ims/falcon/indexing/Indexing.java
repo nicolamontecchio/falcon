@@ -142,8 +142,11 @@ public class Indexing {
 	 * @throws IndexingException 
 	 */
 	public static void index(File data, File index, final int hashPerSegment, final int hashInOverlap,
-					final int subsampling, final int nranks, final double minkurtosis, final TranspositionEstimator transpEst) throws IndexingException, IOException {
+					final int subsampling, final int nranks, final double minkurtosis, 
+					final TranspositionEstimator transpEst, boolean verbose) throws IndexingException, IOException {
 
+		long start_time = System.currentTimeMillis();
+		
 		if (hashPerSegment <= hashInOverlap)
 			throw new IndexingException("Number of hashes in the overlap cannot be equal to the number of hash per segment");
 
@@ -169,10 +172,12 @@ public class Indexing {
 
 		// transform chroma data into hashes and write into index
 		File[] inputfiles = data.isDirectory() ? data.listFiles() : new File[]{data};
+		int fileNo = 0;
 		for (final File file : inputfiles) {
 			// if the current considered files exists and is not hidden
 			if (file.exists() && !file.getName().startsWith(".")) {
-				System.out.println(String.format("indexing %s ...", file.getAbsolutePath()));
+				if(verbose)
+					System.out.println(String.format("%10.3f%% - indexing %s", fileNo*100./inputfiles.length, file.getAbsolutePath()));
 				final List<OutputStream> fout = new LinkedList<OutputStream>();
 				fout.add(new PipedOutputStream());
 				final PipedInputStream fin = new PipedInputStream((PipedOutputStream) fout.get(0));
@@ -188,6 +193,7 @@ public class Indexing {
 				});
 				t.start();
 				indexSong(writer, fin, hashPerSegment, hashInOverlap, file.getAbsolutePath(), file.getAbsolutePath());
+				fileNo++;
 			}
 		}
 		writer.optimize();
@@ -232,6 +238,11 @@ public class Indexing {
 		}
 		pw.flush();
 		pw.close();
+		
+		long end_time = System.currentTimeMillis();
+		if(verbose)
+			System.out.println(String.format("[INDEXING] - elapsed time: %10.3f", (end_time-start_time)/1000.));
+		
 	}
 
 	/**

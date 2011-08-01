@@ -15,17 +15,20 @@ package it.unipd.dei.ims.falcon;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import it.unipd.dei.ims.falcon.analysis.transposition.TranspositionEstimator;
 import it.unipd.dei.ims.falcon.indexing.Indexing;
 import it.unipd.dei.ims.falcon.indexing.IndexingException;
 import it.unipd.dei.ims.falcon.ranking.DocScorePair;
 import it.unipd.dei.ims.falcon.ranking.QueryMethods;
 import it.unipd.dei.ims.falcon.ranking.QueryParsingException;
+import java.io.BufferedReader;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -53,6 +56,7 @@ public class CmdLine {
 	//					"ntf:0.340765*[0.001694,0.995720];ndf:0.344143*[0.007224,0.997113];"
 	//					+ "ncf:0.338766*[0.001601,0.995038];nmf:0.331577*[0.002352,0.997884];";
 	public static void main(String[] args) {
+
 		// last argument is always index path
 		Options options = new Options();
 		// one of these actions has to be specified
@@ -69,6 +73,7 @@ public class CmdLine {
 		options.addOption(new Option("Q", "quantization-level", true, "quantization level for chroma vectors"));
 		options.addOption(new Option("k", "min-kurtosis", true, "minimum kurtosis for indexing chroma vectors"));
 		options.addOption(new Option("s", "sub-sampling", true, "sub-sampling of chroma features"));
+		options.addOption(new Option("v", "verbose", false, "verbose output (including timing info)"));
 
 		// parse
 		HelpFormatter formatter = new HelpFormatter();
@@ -91,12 +96,15 @@ public class CmdLine {
 		int nranks = Integer.parseInt(cmd.getOptionValue("Q", "3"));
 		int subsampling = Integer.parseInt(cmd.getOptionValue("s", "1"));
 		double minkurtosis = Float.parseFloat(cmd.getOptionValue("k", "0."));
+		boolean verbose = cmd.hasOption("v");
+		TranspositionEstimator tpe = null;	// TODO complete
+		int ntransp = 1;                    // TODO complete
 
 		// action
 		if (cmd.hasOption("i")) {
 			try {
 				Indexing.index(new File(cmd.getOptionValue("i")), new File(cmd.getArgs()[0]),
-								hashes_per_segment, overlap_per_segment, subsampling, nranks, minkurtosis, null);
+								hashes_per_segment, overlap_per_segment, subsampling, nranks, minkurtosis, null, verbose);
 			} catch (IndexingException ex) {
 				Logger.getLogger(CmdLine.class.getName()).log(Level.SEVERE, null, ex);
 			} catch (IOException ex) {
@@ -105,20 +113,41 @@ public class CmdLine {
 		}
 		if (cmd.hasOption("q")) {
 			String queryfilepath = cmd.getOptionValue("q");
+			doQuery(cmd, queryfilepath, hashes_per_segment, overlap_per_segment, nranks, subsampling, tpe, ntransp, minkurtosis);
+		}
+		if (cmd.hasOption("b")) {
 			try {
-				Map<String, Double> res = QueryMethods.query(new FileInputStream(queryfilepath), new File(cmd.getArgs()[0]), hashes_per_segment, overlap_per_segment, nranks, subsampling, null, subsampling, minkurtosis, null);
-				int r = 1;
-				for (DocScorePair p : DocScorePair.docscore2scoredoc(res))
-					System.out.println(String.format("rank %5d: %10.6f - %s", r++, p.getScore(), p.getDoc()));
+				BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+				String line = null;
+				while ((line = in.readLine()) != null && !line.trim().isEmpty())
+					doQuery(cmd, line, hashes_per_segment, overlap_per_segment, nranks, subsampling, tpe, ntransp, minkurtosis);
+				in.close();
 			} catch (IOException ex) {
-				Logger.getLogger(CmdLine.class.getName()).log(Level.SEVERE, null, ex);
-			} catch (QueryParsingException ex) {
-				Logger.getLogger(CmdLine.class.getName()).log(Level.SEVERE, null, ex);
-			} catch (InterruptedException ex) {
 				Logger.getLogger(CmdLine.class.getName()).log(Level.SEVERE, null, ex);
 			}
 		}
+	}
 
-
+	private static void doQuery(CommandLine cmd, String queryfilepath, int hashes_per_segment,
+					int overlap_per_segment, int nranks, int subsampling, TranspositionEstimator tpe,
+					int ntransp, double minkurtosis) {
+		try {
+			Map<String, Double> res = QueryMethods.query(new FileInputStream(queryfilepath),
+							new File(cmd.getArgs()[0]), hashes_per_segment, overlap_per_segment, nranks,
+							subsampling, tpe, ntransp, minkurtosis, null);
+			int r = 1;
+			System.out.println("query: " + queryfilepath);
+			for (DocScorePair p : DocScorePair.docscore2scoredoc(res)) {
+				System.out.println(String.format("rank %5d: %10.6f - %s", r++, p.getScore(), p.getDoc()));
+				if (r == 1001)
+					break;
+			}
+		} catch (IOException ex) {
+			Logger.getLogger(CmdLine.class.getName()).log(Level.SEVERE, null, ex);
+		} catch (QueryParsingException ex) {
+			Logger.getLogger(CmdLine.class.getName()).log(Level.SEVERE, null, ex);
+		} catch (InterruptedException ex) {
+			Logger.getLogger(CmdLine.class.getName()).log(Level.SEVERE, null, ex);
+		}
 	}
 }

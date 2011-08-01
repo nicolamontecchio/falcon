@@ -1,6 +1,6 @@
 #! /usr/bin/python
 
-# Convert a chroma matrix from falcon format
+# Convert a chroma matrix from old falcon format
 # to simpler csv format. Operates on stdin and stdout.
 # Does not check for errors.
 
