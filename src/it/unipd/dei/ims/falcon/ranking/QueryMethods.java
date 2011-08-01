@@ -101,6 +101,7 @@ public class QueryMethods {
 	 * @param hps              length of a segment
 	 * @param overlap          overlap between segments (# of hashes)
 	 * @param nranks           quantization level
+	 * @param subsampling      retain only one chroma vector out of subsampling
 	 * @param tpe              instance of transposition estimator algorithm (when null, no transposition attempt is performed)
 	 * @param ntransp          number of transposition attempts (iff tpe != null)
 	 * @param minkurt          kurtosis threshold for considering a chroma vector
@@ -110,7 +111,7 @@ public class QueryMethods {
 	 * @throws InterruptedException
 	 * @return a map from the document title (typically the mp3 file name) to the similarity score
 	 */
-	public static Map<String, Double> query(final InputStream query, File index, final int hps, final int overlap, int nranks, final TranspositionEstimator tpe, int ntransp, final double minkurt, QueryPruningStrategy pruningStrategy) throws IOException, QueryParsingException, InterruptedException {
+	public static Map<String, Double> query(final InputStream query, File index, final int hps, final int overlap, final int nranks, final int subsampling, final TranspositionEstimator tpe, int ntransp, final double minkurt, QueryPruningStrategy pruningStrategy) throws IOException, QueryParsingException, InterruptedException {
 
 		if (reader == null) {
 			reader = IndexReader.open(new SimpleFSDirectory(index));
@@ -165,7 +166,7 @@ public class QueryMethods {
 
 			public void run() {
 				try {
-					ChromaMatrixUtils.convertStream(new InputStreamReader(query), os, 3, tpe, minkurt);
+					ChromaMatrixUtils.convertStream(new InputStreamReader(query), os, nranks, tpe, minkurt, subsampling);
 				} catch (IOException ex) {
 					Logger.getLogger(QueryMethods.class.getName()).log(Level.SEVERE, null, ex);
 				}

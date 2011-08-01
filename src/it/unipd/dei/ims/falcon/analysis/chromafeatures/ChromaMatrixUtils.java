@@ -36,19 +36,22 @@ public class ChromaMatrixUtils {
 	public static ChromaVector[] readChromaMatrixFromStream(InputStreamReader is, int subsampling) throws IOException, NumberFormatException {
 		List<ChromaVector> l = new LinkedList<ChromaVector>();
 		BufferedReader in = new BufferedReader(is);
+		int lineNum = 0;
 		String line = null;
 		while ((line = in.readLine()) != null) {
-			StringTokenizer tok = new StringTokenizer(line.trim(), ",");
-			if (tok.countTokens() == 12) {
-				float[] v = new float[tok.countTokens()];
-				int j = 0;
-				while (tok.hasMoreTokens())
-					v[j++] = Float.parseFloat(tok.nextToken());
-				float vsum = 0;
-				for (float vi : v)
-					vsum += vi;
-				if (vsum > 0) // do not add zero vectors
-					l.add(new ChromaVector(v));
+			if (lineNum++ % subsampling == 0) {
+				StringTokenizer tok = new StringTokenizer(line.trim(), ",");
+				if (tok.countTokens() == 12) {
+					float[] v = new float[tok.countTokens()];
+					int j = 0;
+					while (tok.hasMoreTokens())
+						v[j++] = Float.parseFloat(tok.nextToken());
+					float vsum = 0;
+					for (float vi : v)
+						vsum += vi;
+					if (vsum > 0) // do not add zero vectors
+						l.add(new ChromaVector(v));
+				}
 			}
 		}
 		return l.toArray(new ChromaVector[0]);
@@ -85,8 +88,8 @@ public class ChromaMatrixUtils {
 	 */
 	public static void convertStream(InputStreamReader is, List<OutputStream> os,
 					int nranks, TranspositionEstimator transpEst,
-					double minkurtosis) throws IOException {
-		ChromaVector[] c = ChromaMatrixUtils.readChromaMatrixFromStream(is, 1);
+					double minkurtosis, int subsampling) throws IOException {
+		ChromaVector[] c = ChromaMatrixUtils.readChromaMatrixFromStream(is, subsampling);
 		// init to 0-transp if no transposition estimator specified
 		int[] keys = transpEst != null ? transpEst.findKey(c, os.size()) : new int[]{0};
 		for (int k = 0; k < keys.length; k++) {
@@ -100,7 +103,8 @@ public class ChromaMatrixUtils {
 				c[i].rotate(transp);
 			// conversion
 			convertChromaMatrix(c, os.get(k), nranks, minkurtosis);
-			for(OutputStream o : os) o.flush();
+			for (OutputStream o : os)
+				o.flush();
 		}
 	}
 }

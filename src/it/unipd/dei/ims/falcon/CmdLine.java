@@ -15,24 +15,17 @@ package it.unipd.dei.ims.falcon;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.FileNotFoundException;
-
 import it.unipd.dei.ims.falcon.indexing.Indexing;
 import it.unipd.dei.ims.falcon.indexing.IndexingException;
 import it.unipd.dei.ims.falcon.ranking.DocScorePair;
 import it.unipd.dei.ims.falcon.ranking.QueryMethods;
 import it.unipd.dei.ims.falcon.ranking.QueryParsingException;
-import java.io.BufferedReader;
-import java.io.DataInputStream;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -48,16 +41,17 @@ import org.apache.commons.cli.PosixParser;
  */
 public class CmdLine {
 
-//	public static final String cmdline_notice = "--\nWelcome to FALCON\n"
-//					+ "FAst Lucene-based Cover sOng identificatioN\n--\n"
-//					+ "To print out the complete list of command line options, "
-//					+ "use the --help switch.\nSee the FALCON website for a quick "
-//					+ "usage tutorial:\nhttp://ims.dei.unipd.it/falcon";
-//	
-//	private static final String default_query_pruning_strategy =
-//					"ntf:0.340765*[0.001694,0.995720];ndf:0.344143*[0.007224,0.997113];"
-//					+ "ncf:0.338766*[0.001601,0.995038];nmf:0.331577*[0.002352,0.997884];";
-
+	// TODO transposition estimator not accessible yet
+	// TODO query pruning strategy not accessible yet
+	//	public static final String cmdline_notice = "--\nWelcome to FALCON\n"
+	//					+ "FAst Lucene-based Cover sOng identificatioN\n--\n"
+	//					+ "To print out the complete list of command line options, "
+	//					+ "use the --help switch.\nSee the FALCON website for a quick "
+	//					+ "usage tutorial:\nhttp://ims.dei.unipd.it/falcon";
+	//	
+	//	private static final String default_query_pruning_strategy =
+	//					"ntf:0.340765*[0.001694,0.995720];ndf:0.344143*[0.007224,0.997113];"
+	//					+ "ncf:0.338766*[0.001601,0.995038];nmf:0.331577*[0.002352,0.997884];";
 	public static void main(String[] args) {
 		// last argument is always index path
 		Options options = new Options();
@@ -75,7 +69,7 @@ public class CmdLine {
 		options.addOption(new Option("Q", "quantization-level", true, "quantization level for chroma vectors"));
 		options.addOption(new Option("k", "min-kurtosis", true, "minimum kurtosis for indexing chroma vectors"));
 		options.addOption(new Option("s", "sub-sampling", true, "sub-sampling of chroma features"));
-		
+
 		// parse
 		HelpFormatter formatter = new HelpFormatter();
 		CommandLineParser parser = new PosixParser();
@@ -97,7 +91,7 @@ public class CmdLine {
 		int nranks = Integer.parseInt(cmd.getOptionValue("Q", "3"));
 		int subsampling = Integer.parseInt(cmd.getOptionValue("s", "1"));
 		double minkurtosis = Float.parseFloat(cmd.getOptionValue("k", "0."));
-		
+
 		// action
 		if (cmd.hasOption("i")) {
 			try {
@@ -112,7 +106,7 @@ public class CmdLine {
 		if (cmd.hasOption("q")) {
 			String queryfilepath = cmd.getOptionValue("q");
 			try {
-				Map<String, Double> res = QueryMethods.query(new FileInputStream(queryfilepath), new File(cmd.getArgs()[0]), hashes_per_segment, overlap_per_segment, nranks, null, subsampling, minkurtosis, null);
+				Map<String, Double> res = QueryMethods.query(new FileInputStream(queryfilepath), new File(cmd.getArgs()[0]), hashes_per_segment, overlap_per_segment, nranks, subsampling, null, subsampling, minkurtosis, null);
 				int r = 1;
 				for (DocScorePair p : DocScorePair.docscore2scoredoc(res))
 					System.out.println(String.format("rank %5d: %10.6f - %s", r++, p.getScore(), p.getDoc()));
