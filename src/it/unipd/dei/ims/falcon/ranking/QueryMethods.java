@@ -166,7 +166,7 @@ public class QueryMethods {
 
 			public void run() {
 				try {
-					ChromaMatrixUtils.convertStream(new InputStreamReader(query), os, nranks, tpe, minkurt, subsampling);
+					ChromaMatrixUtils.convertChromaStreamIntoHashesStream(new InputStreamReader(query), os, nranks, tpe, minkurt, subsampling);
 				} catch (IOException ex) {
 					Logger.getLogger(QueryMethods.class.getName()).log(Level.SEVERE, null, ex);
 				}

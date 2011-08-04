@@ -184,7 +184,7 @@ public class Indexing {
 				Thread t = new Thread(new Runnable() {
 					public void run() {
 						try {
-							ChromaMatrixUtils.convertStream(new FileReader(file), fout, nranks, transpEst, minkurtosis, subsampling);
+							ChromaMatrixUtils.convertChromaStreamIntoHashesStream(new FileReader(file), fout, nranks, transpEst, minkurtosis, subsampling);
 						} catch (IOException ex) {
 							// TODO do something better for this exception ... (might hang all ...)
 							Logger.getLogger(Indexing.class.getName()).log(Level.SEVERE, null, ex);

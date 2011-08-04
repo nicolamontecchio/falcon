@@ -19,6 +19,9 @@ import it.unipd.dei.ims.falcon.analysis.transposition.*;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -33,7 +36,7 @@ import java.util.StringTokenizer;
  */
 public class ChromaMatrixUtils {
 
-	public static ChromaVector[] readChromaMatrixFromStream(InputStreamReader is, int subsampling) throws IOException, NumberFormatException {
+	private static ChromaVector[] readChromaMatrixFromStream(InputStreamReader is, int subsampling) throws IOException, NumberFormatException {
 		List<ChromaVector> l = new LinkedList<ChromaVector>();
 		BufferedReader in = new BufferedReader(is);
 		int lineNum = 0;
@@ -57,9 +60,9 @@ public class ChromaMatrixUtils {
 		return l.toArray(new ChromaVector[0]);
 	}
 
-	private static void convertChromaMatrix(ChromaVector[] c, OutputStream os,
+	/** transform into hash representation */
+	private static void convertChromaMatrixIntoHashesStream(ChromaVector[] c, OutputStream os,
 					int nranks, double minkurtosis) throws IOException {
-		// transform into hash representation
 		Integer[] h = new Integer[c.length];
 		for (int i = 0; i < c.length; i++) {
 			if (c[i].getKurtosis() >= minkurtosis) {
@@ -68,7 +71,6 @@ public class ChromaMatrixUtils {
 				h[i] = -1;
 			}
 		}
-		// eventually create output dir, then write file
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os));
 		for (Integer i : h)
 			writer.write("" + i + " ");
@@ -86,7 +88,7 @@ public class ChromaMatrixUtils {
 	 * @param minkurtosis kurtosis threshold for considering a chroma vector
 	 * @throws IOException 
 	 */
-	public static void convertStream(InputStreamReader is, List<OutputStream> os,
+	public static void convertChromaStreamIntoHashesStream(InputStreamReader is, List<OutputStream> os,
 					int nranks, TranspositionEstimator transpEst,
 					double minkurtosis, int subsampling) throws IOException {
 		ChromaVector[] c = ChromaMatrixUtils.readChromaMatrixFromStream(is, subsampling);
@@ -102,9 +104,17 @@ public class ChromaMatrixUtils {
 			for (int i = 0; i < c.length; i++)
 				c[i].rotate(transp);
 			// conversion
-			convertChromaMatrix(c, os.get(k), nranks, minkurtosis);
+			convertChromaMatrixIntoHashesStream(c, os.get(k), nranks, minkurtosis);
 			for (OutputStream o : os)
 				o.flush();
 		}
+	}
+
+	/**
+	 * Convenience method for reading a chroma file.
+	 */
+	public static ChromaVector[] readChromaFile(File f) throws FileNotFoundException, IOException {
+		InputStreamReader is = new InputStreamReader(new FileInputStream(f));
+		return readChromaMatrixFromStream(is, 1);
 	}
 }

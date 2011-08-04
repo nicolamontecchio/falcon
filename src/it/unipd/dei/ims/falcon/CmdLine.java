@@ -44,7 +44,6 @@ import org.apache.commons.cli.PosixParser;
  */
 public class CmdLine {
 
-	// TODO transposition estimator not accessible yet
 	// TODO query pruning strategy not accessible yet
 	//	public static final String cmdline_notice = "--\nWelcome to FALCON\n"
 	//					+ "FAst Lucene-based Cover sOng identificatioN\n--\n"
@@ -74,7 +73,10 @@ public class CmdLine {
 		options.addOption(new Option("k", "min-kurtosis", true, "minimum kurtosis for indexing chroma vectors"));
 		options.addOption(new Option("s", "sub-sampling", true, "sub-sampling of chroma features"));
 		options.addOption(new Option("v", "verbose", false, "verbose output (including timing info)"));
-
+		options.addOption(new Option("T", "transposition-estimator-strategy", true, 
+						"parametrization for the transposition estimator strategy"));
+		options.addOption(new Option("t", "n-transp", true, "number of transposition; default is no transposition"));
+		
 		// parse
 		HelpFormatter formatter = new HelpFormatter();
 		CommandLineParser parser = new PosixParser();
@@ -91,14 +93,24 @@ public class CmdLine {
 		}
 
 		// default values
+		final float[] DEFAULT_TRANSPOSITION_ESTIMATOR_STRATEGY = 
+						new float[] {0.749834f,0.176732f,0.956676f,0.411744f,0.940609f,
+							0.452556f,0.270996f,0.691920f,0.080554f,0.563558f,0.404029f};       // TODO change this, for now is completely random
 		int hashes_per_segment = Integer.parseInt(cmd.getOptionValue("l", "150"));
 		int overlap_per_segment = Integer.parseInt(cmd.getOptionValue("o", "50"));
 		int nranks = Integer.parseInt(cmd.getOptionValue("Q", "3"));
 		int subsampling = Integer.parseInt(cmd.getOptionValue("s", "1"));
 		double minkurtosis = Float.parseFloat(cmd.getOptionValue("k", "0."));
 		boolean verbose = cmd.hasOption("v");
-		TranspositionEstimator tpe = null;	// TODO complete
-		int ntransp = 1;                    // TODO complete
+		int ntransp = Integer.parseInt(cmd.getOptionValue("t","1"));
+		TranspositionEstimator tpe = null;
+		if(cmd.hasOption("t")) {
+			if(cmd.hasOption("T")) {
+				// TODO custom strategy for tpe
+			} else {
+				tpe = new TranspositionEstimator(DEFAULT_TRANSPOSITION_ESTIMATOR_STRATEGY);
+			}
+		}
 
 		// action
 		if (cmd.hasOption("i")) {
