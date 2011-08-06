@@ -94,8 +94,7 @@ public class CmdLine {
 
 		// default values
 		final float[] DEFAULT_TRANSPOSITION_ESTIMATOR_STRATEGY = 
-						new float[] {0.749834f,0.176732f,0.956676f,0.411744f,0.940609f,
-							0.452556f,0.270996f,0.691920f,0.080554f,0.563558f,0.404029f};       // TODO change this, for now is completely random
+						new float[] {0.11034482f,0.0f,0.24911648f,0.5168471f,0.3166931f,0.0f,0.0f,0.16228239f,0.58028734f,0.0f,0.44189438f,0.0f};
 		int hashes_per_segment = Integer.parseInt(cmd.getOptionValue("l", "150"));
 		int overlap_per_segment = Integer.parseInt(cmd.getOptionValue("o", "50"));
 		int nranks = Integer.parseInt(cmd.getOptionValue("Q", "3"));

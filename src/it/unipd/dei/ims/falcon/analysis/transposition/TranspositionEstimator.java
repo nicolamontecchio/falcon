@@ -27,6 +27,12 @@ public class TranspositionEstimator {
 
 	private float[] weights;
 
+	public float[] getWeights() {
+		return weights.clone();
+	}
+	
+	
+
 	/**
 	 * constructor
 	 * 
@@ -73,7 +79,7 @@ public class TranspositionEstimator {
 				if (corr[j] > corr[max])
 					max = j;
 			transp[i] = max;
-			corr[max] = -100;
+			corr[max] = Float.MIN_VALUE;
 		}
 		return transp;
 	}
