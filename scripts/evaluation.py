@@ -8,7 +8,8 @@ def computeMRR(mpr) :
   '''
   mrr = 0
   for q in mpr :
-    mrr += 1./q[0]
+    if q[0] != None :
+      mrr += 1./q[0]
   mrr /= len(mpr)
   return mrr
 
@@ -22,8 +23,11 @@ def computeAP(rl) :
   ap = 0.
   c = 0
   for r in rl :
-    c += 1.
-    ap += c/r
+    if r == None :
+      ap += 0.
+    else :
+      c += 1.
+      ap += c/r
   ap /= len(rl)
   return ap
 
@@ -35,7 +39,7 @@ def computeMAP(mpr) :
   '''
   m_ap = 0
   for q in mpr :
-    m_ap += computeAP(mpr[q])
+    m_ap += computeAP(q)
   m_ap /= len(mpr)
   return m_ap
 
@@ -108,12 +112,39 @@ def computeMatches(res, gt, appendext='') :
             qmatches.append(linecounter)
           if mid != qid :
             linecounter += 1
+        while len(qmatches) < len(cs)-1 :
+          qmatches.append(None)
         matches[query] = qmatches
   return matches
 
+def getTitles(f) :
+  reader = csv.reader(f)
+  titles = {}
+  for line in reader :
+    titles[line[0]] = line[2]
+  return titles
+
 if __name__ == '__main__':
-  gt = parsegtfile(open(sys.argv[1]))
+  # last argument is always groundtruth file
+  # -v prints all (including mrr,map)
+  # -mrr prints only mrr
+  # -map prints only map
+  gt = parsegtfile(open(sys.argv[-1]))
   res = parseres(sys.stdin)
   matches = computeMatches(res,gt,'.mp3.chroma')
-  for m in matches :
-    print(m, matches[m])
+  titles = getTitles(open(sys.argv[-1]))
+  if '-v' in sys.argv :
+    for m in matches : print(m, titles[os.path.basename(m)[:-len('.mp3.chroma')]], matches[m])
+    print('MAP', computeMAP([matches[m] for m in matches]))
+    print('MRR',computeMRR([matches[m] for m in matches]))
+    outsum = 0
+    for m in matches :
+      for x in matches[m] :
+        if x == None :
+          outsum += 1
+    print('out of 1k count:', outsum)
+  elif '-mrr' in sys.argv :
+    print(computeMRR([matches[m] for m in matches]))
+  elif '-map' in sys.argv :
+    print(computeMAP([matches[m] for m in matches]))
+    
