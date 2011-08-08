@@ -15,7 +15,6 @@ package it.unipd.dei.ims.falcon.ranking;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,9 +49,7 @@ public class StaticQueryPruningStrategy implements QueryPruningStrategy {
 		public String toString() {
 			return String.format("[%f,%f]", low, high);
 		}
-
 	}
-
 	// intervals-weights for normalized [term,document,collection,max] frequency
 	private double wt, wd, wc, wm;
 	private Interval it, id, ic, im;
@@ -68,29 +65,28 @@ public class StaticQueryPruningStrategy implements QueryPruningStrategy {
 	 *            pruned)
 	 * */
 	public StaticQueryPruningStrategy(String s) {
-		if (s == null) {
-			wt = .34;
-			wd = .34;
-			wc = .34;
-			wm = .34;
-			it = new Interval(0, 1);
-			id = new Interval(0, 1);
-			ic = new Interval(0, 1);
-			im = new Interval(0, 1);
-		} else {
-			Pattern p = Pattern.compile("\\d\\.\\d*");
-			LinkedList<Double> tokens = new LinkedList<Double>();
-			Matcher m = p.matcher(s);
-			while (m.find())
-				tokens.addLast(new Double(s.substring(m.start(), m.end())));
-			if (tokens.size() != 12)
-				throw new IllegalArgumentException("invalid format for query pruning strategy option");
-			addInterval(INTERVAL_TYPE.NTF, tokens.pollFirst(), tokens.pollFirst(), tokens.pollFirst());
-			addInterval(INTERVAL_TYPE.NDF, tokens.pollFirst(), tokens.pollFirst(), tokens.pollFirst());
-			addInterval(INTERVAL_TYPE.NCF, tokens.pollFirst(), tokens.pollFirst(), tokens.pollFirst());
-			addInterval(INTERVAL_TYPE.NMF, tokens.pollFirst(), tokens.pollFirst(), tokens.pollFirst());
-		}
-
+//		if (s == null) {
+//			wt = .34;
+//			wd = .34;
+//			wc = .34;
+//			wm = .34;
+//			it = new Interval(0, 1);
+//			id = new Interval(0, 1);
+//			ic = new Interval(0, 1);
+//			im = new Interval(0, 1);
+//		} else {
+		Pattern p = Pattern.compile("\\d\\.\\d*");
+		LinkedList<Double> tokens = new LinkedList<Double>();
+		Matcher m = p.matcher(s);
+		while (m.find())
+			tokens.addLast(new Double(s.substring(m.start(), m.end())));
+		if (tokens.size() != 12)
+			throw new IllegalArgumentException("invalid format for query pruning strategy option");
+		addInterval(INTERVAL_TYPE.NTF, tokens.pollFirst(), tokens.pollFirst(), tokens.pollFirst());
+		addInterval(INTERVAL_TYPE.NDF, tokens.pollFirst(), tokens.pollFirst(), tokens.pollFirst());
+		addInterval(INTERVAL_TYPE.NCF, tokens.pollFirst(), tokens.pollFirst(), tokens.pollFirst());
+		addInterval(INTERVAL_TYPE.NMF, tokens.pollFirst(), tokens.pollFirst(), tokens.pollFirst());
+//		}
 	}
 
 	/** @return true if hash should be retained, based on current features */
@@ -119,24 +115,24 @@ public class StaticQueryPruningStrategy implements QueryPruningStrategy {
 	private void addInterval(INTERVAL_TYPE type, double weight, double low, double high) {
 		Interval i = new Interval(low, high);
 		switch (type) {
-		case NTF:
-			it = i;
-			wt = weight;
-			break;
-		case NDF:
-			id = i;
-			wd = weight;
-			break;
-		case NCF:
-			ic = i;
-			wc = weight;
-			break;
-		case NMF:
-			im = i;
-			wm = weight;
-			break;
-		default:
-			throw new IllegalArgumentException("invalid interval type specified");
+			case NTF:
+				it = i;
+				wt = weight;
+				break;
+			case NDF:
+				id = i;
+				wd = weight;
+				break;
+			case NCF:
+				ic = i;
+				wc = weight;
+				break;
+			case NMF:
+				im = i;
+				wm = weight;
+				break;
+			default:
+				throw new IllegalArgumentException("invalid interval type specified");
 		}
 	}
 
@@ -150,5 +146,4 @@ public class StaticQueryPruningStrategy implements QueryPruningStrategy {
 		s += String.format("nmf:%f*%s;", wm, im.toString());
 		return s;
 	}
-
 }

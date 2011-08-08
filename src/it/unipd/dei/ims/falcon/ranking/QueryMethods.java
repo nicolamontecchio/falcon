@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -109,9 +110,11 @@ public class QueryMethods {
 	 * @throws IOException
 	 * @throws QueryParsingException
 	 * @throws InterruptedException
-	 * @return a map from the document title (typically the mp3 file name) to the similarity score
+	 * @return a QueryResults object (contains a map from the document title - typically the mp3 file name - to the similarity score)
 	 */
-	public static Map<String, Double> query(final InputStream query, File index, final int hps, final int overlap, final int nranks, final int subsampling, final TranspositionEstimator tpe, int ntransp, final double minkurt, QueryPruningStrategy pruningStrategy) throws IOException, QueryParsingException, InterruptedException {
+	public static QueryResults query(final InputStream query, File index, final int hps, final int overlap,
+					final int nranks, final int subsampling, final TranspositionEstimator tpe, int ntransp, final double minkurt,
+					QueryPruningStrategy pruningStrategy) throws IOException, QueryParsingException, InterruptedException {
 
 		if (reader == null) {
 			reader = IndexReader.open(new SimpleFSDirectory(index));
@@ -124,6 +127,9 @@ public class QueryMethods {
 		final List<OutputStream> os = new LinkedList<OutputStream>();               // ntransp streams of integer hashes
 		final List<Map<String, Double>> allTranspRes = Collections.synchronizedList(new LinkedList<Map<String, Double>>());
 
+		final AtomicLong totalConsideredHashes = new AtomicLong(0);
+		final AtomicLong prunedHashes = new AtomicLong(0);
+
 		// enqueue ntransp extractQuery
 		for (int i = 0; i < (tpe == null ? 1 : ntransp); i++) {
 			PipedOutputStream po1 = new PipedOutputStream();
@@ -134,7 +140,6 @@ public class QueryMethods {
 			Map<String, Double> songid2finalscore = new TreeMap<String, Double>();
 			final PipedInputStream pi2 = new PipedInputStream(po1);
 			tpool.submit(new Runnable() {
-
 				public void run() {
 					try {
 						queryParser.extractQuery(pi2, hps, overlap);
@@ -152,6 +157,8 @@ public class QueryMethods {
 							}
 						}
 						allTranspRes.add(songid2finalscore);
+						prunedHashes.addAndGet(queryParser.getPrunedHashInQuerySession());
+						totalConsideredHashes.addAndGet(queryParser.getTotalHashInQuerySession());
 					} catch (IOException ex) {
 						Logger.getLogger(QueryMethods.class.getName()).log(Level.SEVERE, null, ex);
 					} catch (QueryParsingException ex) {
@@ -184,6 +191,7 @@ public class QueryMethods {
 				}
 			}
 		}
-		return finalRes;
+
+		return new QueryResults(finalRes, prunedHashes.get(), totalConsideredHashes.get());
 	}
 }
