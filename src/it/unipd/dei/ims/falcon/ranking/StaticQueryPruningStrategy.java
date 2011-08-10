@@ -65,17 +65,7 @@ public class StaticQueryPruningStrategy implements QueryPruningStrategy {
 	 *            pruned)
 	 * */
 	public StaticQueryPruningStrategy(String s) {
-//		if (s == null) {
-//			wt = .34;
-//			wd = .34;
-//			wc = .34;
-//			wm = .34;
-//			it = new Interval(0, 1);
-//			id = new Interval(0, 1);
-//			ic = new Interval(0, 1);
-//			im = new Interval(0, 1);
-//		} else {
-		Pattern p = Pattern.compile("\\d\\.\\d*");
+		Pattern p = Pattern.compile("\\d\\.{0,1}\\d*");
 		LinkedList<Double> tokens = new LinkedList<Double>();
 		Matcher m = p.matcher(s);
 		while (m.find())
@@ -86,7 +76,6 @@ public class StaticQueryPruningStrategy implements QueryPruningStrategy {
 		addInterval(INTERVAL_TYPE.NDF, tokens.pollFirst(), tokens.pollFirst(), tokens.pollFirst());
 		addInterval(INTERVAL_TYPE.NCF, tokens.pollFirst(), tokens.pollFirst(), tokens.pollFirst());
 		addInterval(INTERVAL_TYPE.NMF, tokens.pollFirst(), tokens.pollFirst(), tokens.pollFirst());
-//		}
 	}
 
 	/** @return true if hash should be retained, based on current features */
