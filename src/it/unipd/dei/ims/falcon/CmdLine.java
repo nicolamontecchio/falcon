@@ -177,11 +177,14 @@ public class CmdLine {
 		}
 		if (cmd.hasOption("b")) {
 			try {
+				long starttime = System.currentTimeMillis();
 				BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 				String line = null;
 				while ((line = in.readLine()) != null && !line.trim().isEmpty())
 					doQuery(cmd, line, hashes_per_segment, overlap_per_segment, nranks, subsampling, tpe, ntransp, minkurtosis, qpe, verbose);
 				in.close();
+				long endtime = System.currentTimeMillis();
+				System.out.println(String.format("total time: %ds", (endtime-starttime)/1000));
 			} catch (IOException ex) {
 				Logger.getLogger(CmdLine.class.getName()).log(Level.SEVERE, null, ex);
 			}

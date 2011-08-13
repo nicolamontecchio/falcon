@@ -136,7 +136,7 @@ if __name__ == '__main__':
   if '-v' in sys.argv :
     for m in matches : print(m, titles[os.path.basename(m)[:-len('.mp3.chroma')]], matches[m])
     print('MAP', computeMAP([matches[m] for m in matches]))
-    print('MRR',computeMRR([matches[m] for m in matches]))
+    print('MRR', computeMRR([matches[m] for m in matches]))
     outsum = 0
     for m in matches :
       for x in matches[m] :
