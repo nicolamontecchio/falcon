@@ -3,12 +3,11 @@ import argparse, os
 
 def chunkfile(infile,outdir,length,overlap) :
   ''' divide a file into chunks '''
-  #print('chunkfile called with %s %s %d %d' % (infile, outdir, length, overlap))
   lines = [line for line in open(infile)]
   hopsize = length-overlap
   chunkcounter = 1
   while len(lines) > hopsize:
-    fout = open(os.path.join(outdir,'%s_chunck%05d' % (os.path.basename(infile),chunkcounter)),'w')
+    fout = open(os.path.join(outdir,'%s_chunk%05d' % (os.path.basename(infile),chunkcounter)),'w')
     for l in lines[:min(len(lines),length)] :
       fout.write(l)
     lines = lines[min(len(lines),hopsize):]

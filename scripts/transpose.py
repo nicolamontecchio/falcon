@@ -18,22 +18,3 @@ if __name__ == '__main__':
     writer.writerow(outline)
   if len(sys.argv) == 4 :
     outstream.close()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
