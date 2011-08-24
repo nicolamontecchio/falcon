@@ -45,7 +45,7 @@ def computeMAP(mpr) :
 
 def parseres(f) :
   '''
-  Parse output of a falcon query (including multiple queries).
+  Parse output of a falcon run.
   Return a dictionary, from the query file name to a sorted list
   containing a tuple sequence (filename,rank).
   '''
@@ -133,7 +133,11 @@ if __name__ == '__main__':
   res = parseres(sys.stdin)
   matches = computeMatches(res,gt,'.mp3.chroma')
   titles = getTitles(open(sys.argv[-1]))
-  if '-v' in sys.argv :
+  if '-mrr' in sys.argv :
+    print(computeMRR([matches[m] for m in matches]))
+  elif '-map' in sys.argv :
+    print(computeMAP([matches[m] for m in matches]))
+  else:
     for m in matches : print(m, titles[os.path.basename(m)[:-len('.mp3.chroma')]], matches[m])
     print('MAP', computeMAP([matches[m] for m in matches]))
     print('MRR', computeMRR([matches[m] for m in matches]))
@@ -143,8 +147,4 @@ if __name__ == '__main__':
         if x == None :
           outsum += 1
     print('out of 1k count:', outsum)
-  elif '-mrr' in sys.argv :
-    print(computeMRR([matches[m] for m in matches]))
-  elif '-map' in sys.argv :
-    print(computeMAP([matches[m] for m in matches]))
     
