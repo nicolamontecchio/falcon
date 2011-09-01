@@ -21,21 +21,21 @@ def ranklist_score(l) :
         for x in l :
             s += 1/(max(x,3)**2) if x else 1/(1000**2)
         ss.append(s)
-    return max(ss)
+    return max(ss) if len(ss) > 0 else 0
 
 
 if __name__ == '__main__':
     # PARSE COMMAND LINE
     parser = argparse.ArgumentParser(description='identify tracks in an LP disc')
     parser.add_argument('--lp-chroma-file', help='path to chroma file for LP', required=True)
-    collgroup = parser.add_mutually_exclusive_group(required=True)
-    collgroup.add_argument('--collection-index', help='path to the already indexed collection')
-    collgroup.add_argument('--collection-chromas', help='path to the chroma collection (to be indexed)')
+    parser.add_argument('--collection-index', help='path to the already indexed collection', required=True)
     parser.add_argument('--lp-chunk-length', type=int, help='LP chunk length', default=1800)
     parser.add_argument('--lp-chunk-overlap', type=int, help='LP chunk overlap', default=1200)
     parser.add_argument('--segment-length', help='segment length', default=300)
     parser.add_argument('--segment-overlap', help='segment overlap', default=150)
-    parser.add_argument('--transpositions', help='number of transpositions', default=None)
+    collgroup2 = parser.add_mutually_exclusive_group(required=False)
+    collgroup2.add_argument('--transpositions', help='number of transpositions', default=None)
+    collgroup2.add_argument('--force-transposition', type=int, help='force a specific transposition in semitones', default=None)
     parser.add_argument('--subsampling', help='subsampling of chroma files', default=2)
     args = parser.parse_args()
     # working directory
@@ -45,27 +45,22 @@ if __name__ == '__main__':
         os.makedirs(working_directory)
     # divide chroma file into chunks
     chromachunker.chunkfile(args.lp_chroma_file,working_directory,args.lp_chunk_length,args.lp_chunk_overlap)
-    # make index if necessary
-    collindex = args.collection_index if args.collection_index else os.path.join(working_directory,'collection_index')
-    if not args.collection_index :
-        indexing_cmd = 'java -jar dist/falcon.jar -i %s -l %d -o %d %s -s %d %s' % (
-            args.collection_chromas, args.segment_length, args.segment_overlap, 
-            ('-t %d' % args.transpositions if args.transpositions  else ''),
-            args.subsampling, collindex)
-        #print(indexing_cmd)
-        os.system(indexing_cmd)
-        # do all queries
+    # do all queries
     qlistfile_path = os.path.join(working_directory, 'querylist.txt')
     qlistfile = open(qlistfile_path,'w')
     for qf in filter(lambda x : x.find('_chunk') > 0, os.listdir(working_directory)) :
         qlistfile.write('%s\n' % os.path.join(working_directory,qf))
     qlistfile.close()
     allqueriesres_path = os.path.join(working_directory, 'allqueries_res.txt')
+    transp_arg = ''
+    if args.transpositions :
+        transp_arg = '-t %d' % args.transpositions 
+    elif args.force_transposition :
+        transp_arg = '-f %d' % args.force_transposition 
     querying_cmd = 'java -jar dist/falcon.jar -l %d -o %d %s -s %d %s -b < %s > %s' % (
-        args.segment_length, args.segment_overlap, 
-        ('-t %d' % args.transpositions if args.transpositions  else ''),
-        args.subsampling, collindex, qlistfile_path, allqueriesres_path)
-    #print(querying_cmd)
+        args.segment_length, args.segment_overlap, transp_arg,
+        args.subsampling, args.collection_index, qlistfile_path, allqueriesres_path)
+    print(querying_cmd)
     os.system(querying_cmd)
     # parse query results and produce final rank list
     res = evaluation.parseres(open(allqueriesres_path))

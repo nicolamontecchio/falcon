@@ -15,6 +15,7 @@ package it.unipd.dei.ims.falcon;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import it.unipd.dei.ims.falcon.analysis.transposition.ForcedTranspositionEstimator;
 import it.unipd.dei.ims.falcon.analysis.transposition.TranspositionEstimator;
 import it.unipd.dei.ims.falcon.indexing.Indexing;
 import it.unipd.dei.ims.falcon.indexing.IndexingException;
@@ -100,9 +101,10 @@ public class CmdLine {
 		options.addOption(new Option("T", "transposition-estimator-strategy", true,
 						"parametrization for the transposition estimator strategy"));
 		options.addOption(new Option("t", "n-transp", true, "number of transposition; if not specified, no transposition is performed"));
+		options.addOption(new Option("f", "force-transp", true, "force transposition by an amount of semitones"));
 		options.addOption(new Option("p", "pruning", false, "enable query pruning; if -P is unspecified, use default strategy"));
-		options.addOption(new Option("P", "pruning", true, "custom query pruning strategy"));
-
+		options.addOption(new Option("P", "pruning-custom", true, "custom query pruning strategy"));
+		
 		// parse
 		HelpFormatter formatter = new HelpFormatter();
 		CommandLineParser parser = new PosixParser();
@@ -150,6 +152,8 @@ public class CmdLine {
 			} else {
 				tpe = new TranspositionEstimator(DEFAULT_TRANSPOSITION_ESTIMATOR_STRATEGY);
 			}
+		} else if(cmd.hasOption("f")) {
+			tpe = new ForcedTranspositionEstimator(Integer.parseInt(cmd.getOptionValue("f")));
 		}
 		QueryPruningStrategy qpe = null;
 		if (cmd.hasOption("p")) {
