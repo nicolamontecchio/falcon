@@ -1,6 +1,7 @@
 package it.unipd.dei.ims.falcon.analysis.transposition;
 
 import it.unipd.dei.ims.falcon.analysis.chromafeatures.ChromaVector;
+import java.util.List;
 
 /**
  * Dummy transposition estimator algorithm. 
@@ -9,17 +10,19 @@ import it.unipd.dei.ims.falcon.analysis.chromafeatures.ChromaVector;
  */
 public class ForcedTranspositionEstimator extends TranspositionEstimator {
 
-	private int transp = 0;
-
-	public ForcedTranspositionEstimator(int t) {
+	private int[] transp = null;
+	
+	public ForcedTranspositionEstimator(int[] t) {
 		super(new float[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+		if(t==null)
+			throw new NullPointerException("t can't be null");
 		transp = t;
 	}
 
 	private int[] dumbres(int n) {
 		int[] res = new int[n];
 		for (int i = 0; i < n; i++)
-			res[i] = transp;
+			res[i] = transp[i];
 		return res;
 	}
 

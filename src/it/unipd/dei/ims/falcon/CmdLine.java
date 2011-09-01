@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.cli.CommandLine;
@@ -79,6 +80,15 @@ public class CmdLine {
 		}
 	}
 
+	private static int[] parseIntArray(String s) {
+		StringTokenizer t = new StringTokenizer(s,",");
+		int[] ia = new int[t.countTokens()];
+		int ti = 0;
+		while(t.hasMoreTokens())
+			ia[ti] = Integer.parseInt(t.nextToken());
+		return ia;
+	}
+	
 	public static void main(String[] args) {
 
 		// last argument is always index path
@@ -153,7 +163,9 @@ public class CmdLine {
 				tpe = new TranspositionEstimator(DEFAULT_TRANSPOSITION_ESTIMATOR_STRATEGY);
 			}
 		} else if(cmd.hasOption("f")) {
-			tpe = new ForcedTranspositionEstimator(Integer.parseInt(cmd.getOptionValue("f")));
+			int[] transps = parseIntArray(cmd.getOptionValue("f"));
+			tpe = new ForcedTranspositionEstimator(transps);
+			ntransp = transps.length;
 		}
 		QueryPruningStrategy qpe = null;
 		if (cmd.hasOption("p")) {
