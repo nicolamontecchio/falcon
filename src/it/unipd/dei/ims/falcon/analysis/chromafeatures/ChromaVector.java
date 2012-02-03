@@ -31,7 +31,6 @@ public class ChromaVector {
 
 	/**
 	 * constructor - automatically normalizes values with 2-norm
-	 * 
 	 * @param values
 	 */
 	public ChromaVector(float[] values) {

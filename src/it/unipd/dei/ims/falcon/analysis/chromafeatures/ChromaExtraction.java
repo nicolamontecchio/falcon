@@ -1,9 +1,27 @@
 package it.unipd.dei.ims.falcon.analysis.chromafeatures;
 
+/**
+ * Copyright 2012 University of Padova, Italy
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
 import java.io.IOException;
 
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 import it.unipd.dei.ims.falcon.audio.AudioReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -70,15 +88,15 @@ public class ChromaExtraction {
 	 * @param hopsizeRatio 1 = no hopsize, 2 = 50% overlap, 3 = 66% overlap ...
 	 * @return 
 	 */
-	public static List<double[]> getChromaFeatures(AudioReader reader, double winLenInMs, int hopsizeRatio) throws IOException {
+	public static List<ChromaVector> getChromaFeatures(AudioReader reader, double winLenInMs, int hopsizeRatio) throws IOException {
 
 		int winLen = closestPowerOfTwo((int) (reader.getSampleRate() * (winLenInMs / 1000.)));
 		int hopSize = winLen / hopsizeRatio;
 
-		List<double[]> chromas = new LinkedList<double[]>();
+		List<float[]> chromas_floats = new LinkedList<float[]>();
 		double[] hammingwin = getHammingWindow(winLen);
 
-		
+
 		double[] audio = new double[winLen];
 		shiftAndRead(audio, reader, hopSize * (hopsizeRatio - 1));
 
@@ -98,16 +116,21 @@ public class ChromaExtraction {
 				fft[i] *= hammingwin[i];
 			fftizer.realForward(fft);                          // do fft
 			double[] spectrum = new double[winLen / 2];          // compute abs fft
-			for (int i = 0; i < Math.min(spectrum.length, 10000/ reader.getSampleRate() * winLen); i++)
+			for (int i = 0; i < Math.min(spectrum.length, 10000 / reader.getSampleRate() * winLen); i++)
 				spectrum[i] = Math.sqrt(fft[2 * i] * fft[2 * i] + fft[2 * i + 1] * fft[2 * i + 1]);
 			spectrum = peakPick(spectrum);                     // spectrum peaks
-			double[] chroma = new double[12];
-			for(int i = 0; i < chroma.length; i++)
+			float[] chroma = new float[12];
+			for (int i = 0; i < chroma.length; i++)
 				chroma[i] = 0;
-			for (int i = 0; i < closestPitches.length; i++) 
+			for (int i = 0; i < closestPitches.length; i++)
 				chroma[closestPitches[i]] += spectrum[i];
-			chromas.add(chroma);
+			chromas_floats.add(chroma);
 		}
+
+		List<ChromaVector> chromas = new ArrayList<ChromaVector>(chromas_floats.size());
+		for (float[] cd : chromas_floats)
+			chromas.add(new ChromaVector(cd));
+		
 		return chromas;
 	}
 }
