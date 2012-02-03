@@ -59,6 +59,8 @@ def parseResults(rawRes, gtfilepath) :
             i = fileId2Pos[r[0]]
             s = r[1]
             scorematrix[i,j] = s
+    
+    relevantNotDetected = []
     if gtfilepath :
         lpId = getLpId(rawRes)
         reader = csv.reader(open(gtfilepath,'r'))
@@ -67,15 +69,21 @@ def parseResults(rawRes, gtfilepath) :
                 if line[0] == lpId :
                     relevant = line[1:]
         for r in relevant :
-            i = fileId2Pos[r]
-            scorematrix[i,1] = 1
-    return scorematrix
+            if r in fileId2Pos :
+                i = fileId2Pos[r]
+                scorematrix[i,1] = 1
+            else :
+                relevantNotDetected.append(r)
+    return (scorematrix,relevantNotDetected)
 
 if __name__ == '__main__':
     gtfilepath = sys.argv[1] if len(sys.argv) > 1 else None
     rawRes = [line.strip() for line in sys.stdin]
-    m = parseResults(rawRes, gtfilepath)
+    (m,rnd) = parseResults(rawRes, gtfilepath)
     for l in m.tolist() :
         l[0] = str(int(l[0]))
         l[1] = str(int(l[1]))
         print(','.join(map( lambda x : str(x),l)))
+        mcols = len(l)
+    for r in rnd :
+        print('%s,1,%s' % (r,','.join(['0' for i in range(mcols-2)])))

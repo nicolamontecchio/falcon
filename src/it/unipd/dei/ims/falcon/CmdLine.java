@@ -68,7 +68,7 @@ public class CmdLine {
 				if (r == 1001)
 					break;
 			}
-			if(verbose) {
+			if (verbose) {
 				System.out.println(String.format("pruned|total %d %d", qres.getPrunedHashes(), qres.getTotalConsideredHashes()));
 			}
 		} catch (IOException ex) {
@@ -81,14 +81,14 @@ public class CmdLine {
 	}
 
 	private static int[] parseIntArray(String s) {
-		StringTokenizer t = new StringTokenizer(s,",");
+		StringTokenizer t = new StringTokenizer(s, ",");
 		int[] ia = new int[t.countTokens()];
 		int ti = 0;
-		while(t.hasMoreTokens())
+		while (t.hasMoreTokens())
 			ia[ti] = Integer.parseInt(t.nextToken());
 		return ia;
 	}
-	
+
 	public static void main(String[] args) {
 
 		// last argument is always index path
@@ -108,13 +108,12 @@ public class CmdLine {
 		options.addOption(new Option("k", "min-kurtosis", true, "minimum kurtosis for indexing chroma vectors"));
 		options.addOption(new Option("s", "sub-sampling", true, "sub-sampling of chroma features"));
 		options.addOption(new Option("v", "verbose", false, "verbose output (including timing info)"));
-		options.addOption(new Option("T", "transposition-estimator-strategy", true,
-						"parametrization for the transposition estimator strategy"));
+		options.addOption(new Option("T", "transposition-estimator-strategy", true, "parametrization for the transposition estimator strategy"));
 		options.addOption(new Option("t", "n-transp", true, "number of transposition; if not specified, no transposition is performed"));
 		options.addOption(new Option("f", "force-transp", true, "force transposition by an amount of semitones"));
 		options.addOption(new Option("p", "pruning", false, "enable query pruning; if -P is unspecified, use default strategy"));
 		options.addOption(new Option("P", "pruning-custom", true, "custom query pruning strategy"));
-		
+
 		// parse
 		HelpFormatter formatter = new HelpFormatter();
 		CommandLineParser parser = new PosixParser();
@@ -140,7 +139,7 @@ public class CmdLine {
 		int overlap_per_segment = Integer.parseInt(cmd.getOptionValue("o", "50"));
 		int nranks = Integer.parseInt(cmd.getOptionValue("Q", "3"));
 		int subsampling = Integer.parseInt(cmd.getOptionValue("s", "1"));
-		double minkurtosis = Float.parseFloat(cmd.getOptionValue("k", "0."));
+		double minkurtosis = Float.parseFloat(cmd.getOptionValue("k", "-100."));
 		boolean verbose = cmd.hasOption("v");
 		int ntransp = Integer.parseInt(cmd.getOptionValue("t", "1"));
 		TranspositionEstimator tpe = null;
@@ -162,7 +161,7 @@ public class CmdLine {
 			} else {
 				tpe = new TranspositionEstimator(DEFAULT_TRANSPOSITION_ESTIMATOR_STRATEGY);
 			}
-		} else if(cmd.hasOption("f")) {
+		} else if (cmd.hasOption("f")) {
 			int[] transps = parseIntArray(cmd.getOptionValue("f"));
 			tpe = new ForcedTranspositionEstimator(transps);
 			ntransp = transps.length;
@@ -200,7 +199,7 @@ public class CmdLine {
 					doQuery(cmd, line, hashes_per_segment, overlap_per_segment, nranks, subsampling, tpe, ntransp, minkurtosis, qpe, verbose);
 				in.close();
 				long endtime = System.currentTimeMillis();
-				System.out.println(String.format("total time: %ds", (endtime-starttime)/1000));
+				System.out.println(String.format("total time: %ds", (endtime - starttime) / 1000));
 			} catch (IOException ex) {
 				Logger.getLogger(CmdLine.class.getName()).log(Level.SEVERE, null, ex);
 			}

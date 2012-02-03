@@ -18,7 +18,6 @@ package it.unipd.dei.ims.falcon.analysis.chromafeatures;
 
 /**
  * Represents a Chroma Vector (stores values s.t. norm_2 = 1)
- * 
  */
 public class ChromaVector {
 
