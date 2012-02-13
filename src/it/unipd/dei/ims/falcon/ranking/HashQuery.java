@@ -15,7 +15,6 @@ package it.unipd.dei.ims.falcon.ranking;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import java.io.IOException;
 
 import org.apache.lucene.index.Term;
@@ -88,14 +87,13 @@ public class HashQuery extends Query {
 			if (termDocs == null)
 				return null;
 
-                        return new HashScorer(this, termDocs, similarity, querySegmentLength, docsSegmentNorm);
-                }
+			return new HashScorer(this, termDocs, similarity, querySegmentLength, docsSegmentNorm);
+		}
 
 		@Override
 		public Explanation explain(IndexReader reader, int i) throws IOException {
 			throw new UnsupportedOperationException("Not supported yet.");
 		}
-
 	}
 
 	public HashQuery(Term t, int tf) {
@@ -136,5 +134,4 @@ public class HashQuery extends Query {
 		buffer.append(ToStringUtils.boost(getBoost()));
 		return buffer.toString();
 	}
-
 }
